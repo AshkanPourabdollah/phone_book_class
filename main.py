@@ -1,14 +1,17 @@
 import os
 
 NUMBER_OF_CHARACTERS = 25
+NAME = 'name'
+LAST_NAME = 'last_name'
+PHONE = 'phone'
 
 
 ################################################## Functions ##########################################################
 # Checking file exists
 def check_file_exists(file_path):
     if not os.path.exists(file_path):
-        file = open(file_path, 'x')
-        file.close()
+        with open(file_path, 'x'):
+            pass
 
 
 def table_character_space_creator(entry):
@@ -64,6 +67,46 @@ def reading_file(file_path):
 def append_to_file(file_path, line):
     with open(file_path, 'a') as f:
         f.write(line)
+
+
+def change_order(user_list, order_by):
+    new_list = []
+
+    # New format of database
+    for user in user_list:
+        user = user[:-1]
+        name = user.split(separator)[0]
+        last_name = user.split(separator)[1]
+        phone = user.split(separator)[2]
+
+        if order_by == NAME:
+            new_list.append(f'{name}{separator}{last_name}{separator}{phone}')
+        elif order_by == LAST_NAME:
+            new_list.append(f'{last_name}{separator}{name}{separator}{phone}')
+        else:
+            new_list.append(f'{phone}{separator}{name}{separator}{last_name}')
+
+    # Ordering and cleaning old data
+    user_list.clear()
+    new_list.sort()
+
+    for new_user in new_list:
+        if order_by == NAME:
+            name, last_name, phone = new_user.split(separator)
+        elif order_by == LAST_NAME:
+            last_name, name, phone = new_user.split(separator)
+        else:
+            phone, name, last_name = new_user.split(separator)
+
+        user_list.append(f'{name}{separator}{last_name}{separator}{phone}\n')
+
+    return user_list
+
+
+def override_file(file_path, user_list):
+    with open(file_path, 'w') as f:
+        for i in user_list:
+            f.write(i)
 
 
 def validation_name_and_last_name(content):
@@ -134,10 +177,46 @@ def add_contacts_main_function(file_path):
     print("✅ Your contact has been added successfully.")
 
 
+def delete_contact_main_function(file_path):
+    title("Delete Contact")
+
+    # Loading data
+    data = reading_file(file_path)
+
+    # Getting deleting data from user
+    deleting_entry = input("🔤 Please enter phone or a name you want to delete >>> ").strip()
+
+    # Check the mood
+    if deleting_entry.isnumeric():
+        if not validation_phone(deleting_entry):
+            print("⚠️ What you entered is not valid, please try again.")
+            return False
+    else:
+        if not validation_name_and_last_name(deleting_entry):
+            print("⚠️ What you entered is not valid, please try again.")
+            return False
+
+    # Searching
+    new_data = []
+    user_counter = 0
+    for user in data:
+        if not deleting_entry in user:
+            new_data.append(user)
+        else:
+            user_counter += 1
+
+    # Overriding database
+    override_file(file_path, new_data)
+
+    print(
+        '⚠️ There is no contact with this info exists!' if user_counter == 0 else f'✅ {user_counter} contact with this info deleted successfully!!'
+    )
+
+
 def search_contacts_main_function(file_path):
     title('Searching Contacts')
 
-    print("With which parameter do you want to search?")
+    print("❓ With which parameter do you want to search?")
     print('1️⃣ Name')
     print('2️⃣ Phone')
     search_choice = input("😃 Enter your choice >>> ")
@@ -164,6 +243,26 @@ def search_contacts_main_function(file_path):
         table_creator(data)
 
 
+def order_contacts_list_main_function(file_path):
+    title("Ordering Contacts")
+    print("❓ With which parameter do you want to order?")
+    print("1️⃣ Name")
+    print("2️⃣ Last Name")
+    print("3️⃣ Phone")
+    order_choice = input('>>> ')
+
+    data = reading_file(file_path)
+
+    if order_choice == "1":
+        override_file(file_path, change_order(data, NAME))
+    elif order_choice == "2":
+        override_file(file_path, change_order(data, LAST_NAME))
+    elif order_choice == "3":
+        override_file(file_path, change_order(data, PHONE))
+    else:
+        print("⚠️ Invalid choice")
+
+
 ################################################## Main part ##########################################################
 file_name = 'database.txt'
 separator = '###'
@@ -174,13 +273,14 @@ print('Hello and welcome to Computech phone book 📞')
 
 # Menu
 menu = '''
-What do you want to do?
+❓ What do you want to do?
 1️⃣ Show Contacts
 2️⃣ Add Contact
 3️⃣ Update Contact
 4️⃣ Delete Contact
 5️⃣ Search Contacts
-6️⃣ Exit
+6️⃣ Order Contacts List
+7️⃣ Exit
 >>> '''
 
 while True:
@@ -193,10 +293,12 @@ while True:
     elif choice == '3':
         pass
     elif choice == '4':
-        pass
+        delete_contact_main_function(file_name)
     elif choice == '5':
         search_contacts_main_function(file_name)
     elif choice == '6':
+        order_contacts_list_main_function(file_name)
+    elif choice == '7':
         print("Thank you for using Computech phone book ! 😊")
         print("Programmed by : Ashkan Pourabdollah 😎")
         print('Have a nice time ! 👋')
